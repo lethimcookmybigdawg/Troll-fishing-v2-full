@@ -1181,7 +1181,7 @@ footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--hair);
         <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
       </button>
       <!-- LOGGED OUT: show nothing extra (login link) -->
-      <a id="auth-login-link" href="login.html" style="display:none;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--hair);padding:8px 14px;transition:color 200ms,border-color 200ms;" onmouseover="this.style.color='var(--ink)';this.style.borderColor='var(--rule)'" onmouseout="this.style.color='var(--ink-dim)';this.style.borderColor='var(--hair)'">Log in</a>
+      <a id="auth-login-link" href="index.html" style="display:none;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--hair);padding:8px 14px;transition:color 200ms,border-color 200ms;" onmouseover="this.style.color='var(--ink)';this.style.borderColor='var(--rule)'" onmouseout="this.style.color='var(--ink-dim)';this.style.borderColor='var(--hair)'">Log in</a>
       <!-- LOGGED IN: profile corner -->
       <div id="profile-corner" class="profile-corner" style="display:none" onclick="window.location.href='deck.html'" title="Go to your deck">
         <div class="profile-avatar" id="profile-avatar">?</div>
@@ -3103,7 +3103,7 @@ function showLoginLink() {
 
 async function handleSignOut() {
   await sb.auth.signOut();
-  window.location.href = 'login.html';
+  window.location.href = 'index.html';
 }
 
 /* ==========================================================================

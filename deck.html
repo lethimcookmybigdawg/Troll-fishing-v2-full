@@ -610,7 +610,7 @@ let ratingVal    = 3;
 /* ── AUTH GUARD ──────────────────────────────────────────────────────── */
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) { window.location.href = 'login.html'; return; }
+  if (!session) { window.location.href = 'index.html'; return; }
 
   currentUser = session.user;
   await loadProfile();
@@ -621,7 +621,7 @@ async function init() {
   computeBestTime();
 
   sb.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') window.location.href = 'login.html';
+    if (event === 'SIGNED_OUT') window.location.href = 'index.html';
   });
 }
 
@@ -644,7 +644,7 @@ async function loadProfile() {
 /* ── SIGN OUT ─────────────────────────────────────────────────────────── */
 document.getElementById('signout-btn').addEventListener('click', async () => {
   await sb.auth.signOut();
-  window.location.href = 'login.html';
+  window.location.href = 'index.html';
 });
 
 /* ── CLOCK ───────────────────────────────────────────────────────────── */
