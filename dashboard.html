@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Major+Mono+Display&display=swap">
 
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 /* ==========================================================================
@@ -322,6 +323,33 @@ a { color: inherit; text-decoration: none; }
   animation: livePulse 1.6s var(--ease-quart) infinite;
 }
 @keyframes livePulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+
+/* ── AUTH / PROFILE CORNER ─────────────────────────────────────────────── */
+.profile-corner {
+  display: flex; align-items: center; gap: 10px;
+  cursor: none;
+}
+@media (pointer: coarse) { .profile-corner { cursor: pointer; } }
+.profile-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--radio); color: var(--paper-deep);
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 13px;
+  flex-shrink: 0; overflow: hidden;
+  transition: box-shadow 200ms;
+}
+.profile-avatar:hover { box-shadow: 0 0 0 2px var(--radio); }
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-meta { line-height: 1.3; }
+.profile-name { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; }
+.profile-greeting { font-family: var(--font-display); font-size: 12px; font-style: italic; color: var(--radio); }
+.btn-signout {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; padding: 8px 12px; min-height: 36px;
+  border: 1px solid var(--hair); color: var(--ink-ghost);
+  transition: color 200ms, border-color 200ms;
+}
+.btn-signout:hover { color: var(--ink); border-color: var(--rule); }
 
 /* ==========================================================================
    07 — TYPHOON BANNER + ALERTS
@@ -1139,7 +1167,7 @@ footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--hair);
 
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" aria-selected="true" data-view="dashboard">dash</button>
-      <button class="tab" role="tab" aria-selected="false" data-view="deck">deck</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="deck" id="tab-deck">deck</button>
       <button class="tab" role="tab" aria-selected="false" data-view="log">log</button>
       <button class="tab" role="tab" aria-selected="false" data-view="wall">wall</button>
     </nav>
@@ -1152,6 +1180,17 @@ footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--hair);
       <button class="icon-btn" id="share-app-btn" aria-label="Share TROLL">
         <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
       </button>
+      <!-- LOGGED OUT: show nothing extra (login link) -->
+      <a id="auth-login-link" href="login.html" style="display:none;font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--hair);padding:8px 14px;transition:color 200ms,border-color 200ms;" onmouseover="this.style.color='var(--ink)';this.style.borderColor='var(--rule)'" onmouseout="this.style.color='var(--ink-dim)';this.style.borderColor='var(--hair)'">Log in</a>
+      <!-- LOGGED IN: profile corner -->
+      <div id="profile-corner" class="profile-corner" style="display:none" onclick="window.location.href='deck.html'" title="Go to your deck">
+        <div class="profile-avatar" id="profile-avatar">?</div>
+        <div class="profile-meta">
+          <div class="profile-name" id="profile-name">—</div>
+          <div class="profile-greeting" id="profile-greeting">—</div>
+        </div>
+      </div>
+      <button id="signout-btn" class="btn-signout" style="display:none" onclick="handleSignOut()">Sign out</button>
       <span class="live-pip" id="live-pip">live</span>
     </div>
   </header>
@@ -2819,8 +2858,8 @@ function setView(v) {
   STATE.view = v;
   $$('.view').forEach(el => el.dataset.active = String(el.dataset.view === v));
   $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.view === v)));
-  if (v === 'wall') renderWall();
-  if (v === 'log') renderLog();
+  if (v === 'wall') renderWallFromSupabase();
+  if (v === 'log')  renderLog();
 }
 
 async function refresh() {
@@ -2974,6 +3013,8 @@ function setupHandlers() {
     if (!entry.species) return;
     STATE.log.unshift(entry);
     localStorage.setItem('troll.log', JSON.stringify(STATE.log));
+    // Also save to Supabase cloud if logged in
+    saveToCloud(entry);
     e.target.reset();
     $('#log-time').value = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('#log-rating').dataset.rating = 3;
@@ -3009,12 +3050,143 @@ function setupHandlers() {
   });
 }
 
+/* ==========================================================================
+   AUTH — Supabase session management
+   ========================================================================== */
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let AUTH = { user: null, profile: null };
+
+async function initAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    AUTH.user = session.user;
+    await loadProfile();
+    showProfileCorner();
+  } else {
+    showLoginLink();
+  }
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      AUTH.user = session.user;
+      await loadProfile();
+      showProfileCorner();
+    } else if (event === 'SIGNED_OUT') {
+      AUTH.user = null; AUTH.profile = null;
+      showLoginLink();
+    }
+  });
+}
+
+async function loadProfile() {
+  const { data } = await sb.from('profiles').select('*').eq('id', AUTH.user.id).single();
+  AUTH.profile = data;
+  const username = data?.username || AUTH.user.email.split('@')[0];
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  $('#profile-name').textContent   = username.toUpperCase();
+  $('#profile-greeting').textContent = `${greet} ✦`;
+  $('#profile-avatar').textContent = username[0].toUpperCase();
+}
+
+function showProfileCorner() {
+  $('#auth-login-link').style.display = 'none';
+  $('#profile-corner').style.display  = 'flex';
+  $('#signout-btn').style.display     = 'inline-flex';
+}
+
+function showLoginLink() {
+  $('#auth-login-link').style.display = 'inline-flex';
+  $('#profile-corner').style.display  = 'none';
+  $('#signout-btn').style.display     = 'none';
+}
+
+async function handleSignOut() {
+  await sb.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+/* ==========================================================================
+   SUPABASE LOG — save catch to cloud (mirrors localStorage)
+   ========================================================================== */
+async function saveToCloud(entry) {
+  if (!AUTH.user) return;
+  const { error } = await sb.from('catches').insert({
+    user_id:   AUTH.user.id,
+    species:   entry.species,
+    size:      entry.size   ? String(entry.size)   : null,
+    weight:    null,
+    location:  entry.location?.name || LOC[STATE.loc].name,
+    bait_used: entry.bait   || null,
+    notes:     entry.notes  || null,
+    caught_at: entry.timestamp ? new Date(entry.timestamp).toISOString() : new Date().toISOString(),
+    is_public: true
+  });
+  if (error) console.warn('Cloud save failed:', error.message);
+}
+
+/* ==========================================================================
+   SUPABASE WALL — real community catches
+   ========================================================================== */
+async function renderWallFromSupabase() {
+  const { data: catches } = await sb
+    .from('catches')
+    .select('*, profiles:user_id (username)')
+    .eq('is_public', true)
+    .order('caught_at', { ascending: false })
+    .limit(30);
+
+  if (!catches || catches.length === 0) {
+    $('#wall-grid').innerHTML = `<div style="grid-column:1/-1;padding:60px 20px;text-align:center;font-family:var(--font-display);font-style:italic;font-size:20px;color:var(--ink-dim);border:1px dashed var(--hair);">No catches yet. Log the first one →</div>`;
+    $('#wall-count').textContent = '0 catches';
+    $('#wall-trending').innerHTML = '';
+    return;
+  }
+
+  $('#wall-count').textContent = `${catches.length} CATCHES`;
+
+  /* trending species */
+  const freq = {};
+  catches.forEach(c => { freq[c.species] = (freq[c.species] || 0) + 1; });
+  const trending = Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0,5);
+  $('#wall-trending').innerHTML = trending.map(([n,c]) => `<span class="trend-pill">${n} × ${c}</span>`).join('');
+
+  function timeAgo(str) {
+    const diff = (Date.now() - new Date(str)) / 1000;
+    if (diff < 60)   return 'just now';
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400)return `${Math.floor(diff/3600)}h ago`;
+    return `${Math.floor(diff/86400)}d ago`;
+  }
+
+  $('#wall-grid').innerHTML = catches.map(c => `
+    <div class="wall-item">
+      <div class="wall-head">
+        <span class="wall-user">${c.profiles?.username || 'anonymous'}</span>
+        <span class="wall-time">${timeAgo(c.caught_at)}</span>
+      </div>
+      <div class="wall-fish">${c.species}</div>
+      <div class="wall-meta">
+        ${c.size   ? `<span class="wall-size">${c.size}cm</span>` : ''}
+        ${c.weight ? `<span>${c.weight}kg</span>` : ''}
+        <span>${c.location || '—'}</span>
+        ${c.bait_used ? `<span>${c.bait_used}</span>` : ''}
+      </div>
+      ${c.notes ? `<div style="font-family:var(--font-display);font-style:italic;font-size:14px;color:var(--ink-dim);line-height:1.4;">${c.notes}</div>` : ''}
+    </div>`).join('');
+}
+
 function boot() {
   document.documentElement.style.setProperty('--brand-name', '"TROLL"');
   Cursor.init();
   setupHandlers();
   setupPTR();
   setView('dashboard');
+  // Auth — non-blocking, profile corner updates when session resolves
+  initAuth();
+  // Deck tab navigates to deck.html
+  const deckTab = $('#tab-deck');
+  if (deckTab) deckTab.addEventListener('click', () => { window.location.href = 'deck.html'; });
   refresh().finally(() => {
     setTimeout(() => $('#splash').classList.add('gone'), 200);
     setTimeout(() => $('#splash').remove(), 1500);
