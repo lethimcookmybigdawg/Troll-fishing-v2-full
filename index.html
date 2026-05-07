@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+<meta name="theme-color" content="#06080b" />
+<title>TROLL — Sign In</title>
+
+<link rel="icon" href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2306080b'/%3E%3Cpath d='M10 50 Q30 40 50 48 Q65 40 88 30 L78 50 L88 70 Q65 60 50 52 Q30 60 10 50 Z' fill='none' stroke='%23c5ff3d' stroke-width='2'/%3E%3C/svg%3E" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Major+Mono+Display&display=swap" rel="stylesheet">
+
+<style>
+/* ── TOKENS (identical to dashboard) ───────────────────────────────────── */
+:root {
+  --paper: #0a0d12;
+  --paper-deep: #06080b;
+  --ink: #f5f1e8;
+  --ink-dim: #a8a29e;
+  --ink-ghost: #57534e;
+  --radio: #c5ff3d;
+  --radio-glow: rgba(197,255,61,0.25);
+  --radio-trace: rgba(197,255,61,0.08);
+  --warn: #d4a574;
+  --danger: #b85c5c;
+  --calm: #7a9b8e;
+  --hair: rgba(245,241,232,0.08);
+  --rule: rgba(245,241,232,0.18);
+  --font-display: "Fraunces","Playfair Display",Georgia,serif;
+  --font-body: "Inter Tight",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --font-mono: "JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --font-stencil: "Major Mono Display","JetBrains Mono",monospace;
+  --spring: cubic-bezier(0.34,1.36,0.64,1);
+  --ease-quart: cubic-bezier(0.25,1,0.5,1);
+}
+
+/* ── RESET ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper-deep);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  cursor: none;
+}
+@media (pointer: coarse) { body { cursor: auto; overflow: auto; } }
+button, input { font: inherit; color: inherit; }
+button { cursor: none; background: transparent; border: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+@media (pointer: coarse) { button { cursor: pointer; } }
+
+/* ── CURSOR ─────────────────────────────────────────────────────────────── */
+#cursor-dot, #cursor-ring {
+  position: fixed; top: 0; left: 0;
+  pointer-events: none; will-change: transform; z-index: 9999;
+}
+#cursor-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--radio);
+  box-shadow: 0 0 8px var(--radio-glow);
+  transform: translate3d(-50%,-50%,0);
+}
+#cursor-ring {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 1px solid var(--radio);
+  transform: translate3d(-50%,-50%,0);
+  transition: width 200ms var(--ease-quart), height 200ms var(--ease-quart), background 200ms;
+}
+#cursor-ring::before, #cursor-ring::after {
+  content: ""; position: absolute; background: var(--radio); opacity: 0.7;
+}
+#cursor-ring::before { left:50%; top:-4px; bottom:-4px; width:1px; transform:translateX(-50%); }
+#cursor-ring::after  { top:50%; left:-4px; right:-4px; height:1px; transform:translateY(-50%); }
+#cursor-ring.hover { width:56px; height:56px; background:var(--radio-trace); }
+#cursor-ring.hover::before, #cursor-ring.hover::after { opacity:0; }
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  #cursor-dot, #cursor-ring { display: none !important; }
+}
+
+/* ── SCANLINES ──────────────────────────────────────────────────────────── */
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 100;
+  background: repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(255,255,255,0.012) 2px,rgba(255,255,255,0.012) 3px);
+}
+
+/* ── STARS FX ───────────────────────────────────────────────────────────── */
+.fx-stars {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 25%, var(--ink) 50%, transparent),
+    radial-gradient(1px 1px at 60% 15%, var(--radio) 50%, transparent),
+    radial-gradient(1px 1px at 80% 55%, var(--ink) 50%, transparent),
+    radial-gradient(1px 1px at 30% 70%, var(--ink) 50%, transparent),
+    radial-gradient(1px 1px at 70% 80%, var(--radio) 50%, transparent),
+    radial-gradient(1px 1px at 10% 55%, var(--ink) 50%, transparent),
+    radial-gradient(1px 1px at 50% 35%, var(--ink) 50%, transparent),
+    radial-gradient(1px 1px at 90% 20%, var(--ink) 50%, transparent),
+    radial-gradient(1px 1px at 45% 90%, var(--radio) 50%, transparent),
+    radial-gradient(1px 1px at 25% 45%, var(--ink) 50%, transparent);
+  opacity: 0.45;
+  animation: starDrift 180s ease-in-out infinite;
+}
+@keyframes starDrift {
+  0%,100% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+  50% { background-position: 4px -3px, -3px 4px, 2px -5px, -4px 2px, 3px 3px, -2px -4px, 5px 1px, -3px 5px, 2px -2px, -5px 3px; }
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────────────────────── */
+.shell {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; overflow: auto; min-height: 100dvh; }
+  body { overflow: auto; }
+}
+
+/* ── LEFT — BRAND PANEL ─────────────────────────────────────────────────── */
+.brand-panel {
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: clamp(40px,6vw,80px);
+  border-right: 1px solid var(--hair);
+  position: relative; overflow: hidden;
+}
+@media (max-width: 900px) { .brand-panel { display: none; } }
+
+.brand-panel::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 60% 60% at 30% 70%, var(--radio-trace), transparent);
+}
+
+.brand-logo {
+  display: flex; align-items: center; gap: 14px;
+}
+.brand-logo svg { width: 44px; height: 44px; stroke: var(--ink); fill: none; stroke-width: 1.6; }
+.brand-logo-word {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: 0.3em; padding-left: 0.3em;
+}
+.brand-logo-word .rule { width: 14px; height: 1px; background: var(--ink); opacity: 0.7; }
+
+.brand-hero {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  padding: 60px 0;
+}
+.brand-headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(52px, 5vw, 72px);
+  line-height: 0.93;
+  letter-spacing: -0.04em;
+  margin-bottom: 28px;
+}
+.brand-headline em { font-style: italic; color: var(--radio); font-weight: 500; }
+.brand-sub {
+  font-family: var(--font-mono);
+  font-size: 12px; letter-spacing: 0.14em; color: var(--ink-dim);
+}
+
+/* big fish illustration */
+.brand-fish-wrap {
+  margin: 40px 0;
+  opacity: 0.12;
+}
+.brand-fish-wrap svg { width: 100%; stroke: var(--ink); fill: none; stroke-width: 1.2; }
+
+.brand-coords {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  color: var(--ink-ghost); line-height: 1.8;
+}
+.brand-coords .live {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--ink-dim);
+}
+.brand-coords .live::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--radio); box-shadow: 0 0 10px var(--radio);
+  animation: livePulse 1.6s var(--ease-quart) infinite;
+}
+@keyframes livePulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.7); } }
+
+/* ── RIGHT — AUTH PANEL ─────────────────────────────────────────────────── */
+.auth-panel {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: clamp(40px,6vw,80px) clamp(32px,5vw,64px);
+}
+
+.auth-box { width: 100%; max-width: 380px; }
+
+/* Mobile logo (only shown when brand panel is hidden) */
+.mobile-logo {
+  display: none;
+  align-items: center; gap: 12px;
+  margin-bottom: 48px;
+}
+@media (max-width: 900px) { .mobile-logo { display: flex; } }
+.mobile-logo svg { width: 32px; height: 32px; stroke: var(--ink); fill: none; stroke-width: 1.6; }
+.mobile-logo .name {
+  font-family: var(--font-display); font-weight: 700; font-size: 16px;
+  letter-spacing: 0.3em; padding-left: 0.3em;
+}
+
+.auth-title {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: 32px; letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.auth-sub {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-dim);
+  margin-bottom: 40px;
+}
+
+/* Form */
+.field { display: grid; gap: 8px; margin-bottom: 24px; }
+.field label {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim);
+}
+.field input {
+  background: transparent; border: 0;
+  border-bottom: 1px solid var(--hair);
+  padding: 12px 0; min-height: 48px;
+  font-size: 16px; color: var(--ink);
+  outline: none;
+  transition: border-color 200ms;
+  cursor: none;
+}
+@media (pointer: coarse) { .field input { cursor: text; } }
+.field input:focus { border-bottom-color: var(--radio); }
+.field input::placeholder { color: var(--ink-ghost); }
+.field input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 100px var(--paper-deep) inset;
+  -webkit-text-fill-color: var(--ink);
+}
+
+.auth-err {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+  color: var(--danger); margin-bottom: 20px; min-height: 16px;
+  display: none;
+}
+.auth-err.on { display: block; animation: errShake 0.4s ease; }
+@keyframes errShake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+/* Primary CTA — same .btn.primary as dashboard */
+.btn-primary {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em;
+  text-transform: uppercase; padding: 16px 22px; min-height: 52px;
+  border: 1px solid var(--radio);
+  background: var(--radio); color: var(--paper-deep);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; transition: background 200ms, color 200ms, border-color 200ms;
+  margin-top: 8px;
+}
+.btn-primary:hover { background: var(--ink); border-color: var(--ink); color: var(--paper-deep); }
+.btn-primary:active { transform: scale(0.96); }
+.btn-primary:disabled { opacity: 0.45; pointer-events: none; }
+
+.auth-toggle {
+  margin-top: 28px; text-align: center;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--ink-dim);
+}
+.auth-toggle a {
+  color: var(--ink); text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 1px; cursor: none;
+  transition: color 200ms, border-color 200ms;
+}
+@media (pointer: coarse) { .auth-toggle a { cursor: pointer; } }
+.auth-toggle a:hover { color: var(--radio); border-color: var(--radio); }
+
+/* Form switching */
+.auth-form { display: none; }
+.auth-form.active { display: block; animation: formIn 300ms var(--ease-quart); }
+@keyframes formIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* ── LOADING OVERLAY ────────────────────────────────────────────────────── */
+#splash-out {
+  position: fixed; inset: 0; background: var(--paper-deep); z-index: 9998;
+  display: grid; place-items: center; opacity: 0; pointer-events: none;
+  transition: opacity 300ms;
+}
+#splash-out.on { opacity: 1; pointer-events: all; }
+.splash-spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--hair); border-top-color: var(--radio);
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="fx-stars" aria-hidden="true"></div>
+
+<!-- Cursor -->
+<div id="cursor-dot" aria-hidden="true"></div>
+<div id="cursor-ring" aria-hidden="true"></div>
+
+<!-- Loading overlay (shown after successful login) -->
+<div id="splash-out" aria-hidden="true"><div class="splash-spinner"></div></div>
+
+<!-- SVG SYMBOLS (from dashboard) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="sailfish-mark" viewBox="0 0 100 50">
+      <path d="M3 26 Q22 18 38 24 Q44 18 52 22 L72 18 L92 6 L78 22 L92 28 L72 36 L52 32 Q44 36 38 30 Q22 36 3 28 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M38 24 Q35 14 32 6 Q42 12 48 22" fill="none" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="78" y1="22" x2="92" y2="6" stroke="currentColor" stroke-width="0.6"/>
+      <circle cx="20" cy="25" r="0.8" fill="currentColor"/>
+    </symbol>
+    <symbol id="sailfish-art" viewBox="0 0 400 200">
+      <g stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round">
+        <path d="M10 110 Q90 80 160 100 Q180 80 220 92 L300 70 L380 30 L340 95 L380 130 L300 110 L220 115 Q180 128 160 116 Q90 130 10 115 Z"/>
+        <path d="M160 100 Q150 70 140 40 Q135 20 130 6 Q150 14 165 30 Q180 50 195 78 Q205 88 220 92"/>
+        <path d="M160 116 Q145 130 135 150 Q150 145 168 130"/>
+        <path d="M340 95 L380 30 M340 95 L380 130"/>
+        <path d="M260 84 L290 78 L280 96 Z"/>
+        <path d="M250 110 L280 116 L268 130 Z"/>
+        <line x1="40" y1="105" x2="200" y2="105" stroke-width="0.4" opacity="0.6"/>
+        <circle cx="40" cy="103" r="1.6" fill="currentColor"/>
+        <path d="M30 103 Q34 100 42 102" stroke-width="0.6"/>
+        <path d="M70 92 Q72 110 70 122" stroke-width="0.6"/>
+        <line x1="135" y1="40" x2="155" y2="60" stroke-width="0.4"/>
+        <line x1="145" y1="32" x2="170" y2="58" stroke-width="0.4"/>
+        <line x1="155" y1="22" x2="180" y2="56" stroke-width="0.4"/>
+        <line x1="165" y1="18" x2="190" y2="60" stroke-width="0.4"/>
+        <line x1="100" y1="92" x2="120" y2="92" stroke-width="0.3"/>
+        <line x1="120" y1="90" x2="160" y2="90" stroke-width="0.3"/>
+        <line x1="180" y1="98" x2="220" y2="98" stroke-width="0.3"/>
+        <line x1="220" y1="100" x2="280" y2="100" stroke-width="0.3"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+
+  <!-- LEFT: BRAND PANEL -->
+  <div class="brand-panel" aria-hidden="true">
+    <div class="brand-logo">
+      <svg viewBox="0 0 100 50"><use href="#sailfish-mark"/></svg>
+      <div class="brand-logo-word">
+        <span class="rule"></span>
+        <span>TROLL</span>
+        <span class="rule"></span>
+      </div>
+    </div>
+
+    <div class="brand-hero">
+      <h1 class="brand-headline">Tide's <em>up.</em><br/>Get out.</h1>
+      <div class="brand-sub">SAI KUNG · SHORE FISHING · HK</div>
+      <div class="brand-fish-wrap">
+        <svg viewBox="0 0 400 200"><use href="#sailfish-art"/></svg>
+      </div>
+    </div>
+
+    <div class="brand-coords">
+      <div class="live">LIVE</div>
+      <div>22.3811°N · 114.2683°E</div>
+      <div>SAI KUNG, HONG KONG</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: AUTH PANEL -->
+  <div class="auth-panel">
+    <div class="auth-box">
+
+      <!-- Mobile logo -->
+      <div class="mobile-logo">
+        <svg viewBox="0 0 100 50"><use href="#sailfish-mark"/></svg>
+        <span class="name">TROLL</span>
+      </div>
+
+      <!-- Dynamic title region -->
+      <div id="auth-heading">
+        <h2 class="auth-title" id="auth-title-text">Welcome back.</h2>
+        <div class="auth-sub" id="auth-sub-text">Sign in to your account</div>
+      </div>
+
+      <!-- Error -->
+      <div class="auth-err" id="auth-err"></div>
+
+      <!-- LOGIN FORM -->
+      <form class="auth-form active" id="login-form" onsubmit="handleLogin(event)" novalidate>
+        <div class="field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="you@email.com" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="login-pw">Password</label>
+          <input type="password" id="login-pw" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn-primary" id="login-btn">
+          <span id="login-btn-text">Log in</span>
+        </button>
+        <div class="auth-toggle">No account? <a onclick="switchForm('signup')" tabindex="0">Sign up</a></div>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form class="auth-form" id="signup-form" onsubmit="handleSignup(event)" novalidate>
+        <div class="field">
+          <label for="signup-name">Username</label>
+          <input type="text" id="signup-name" placeholder="angler_hk" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" placeholder="you@email.com" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="signup-pw">Password</label>
+          <input type="password" id="signup-pw" placeholder="6+ characters" autocomplete="new-password" minlength="6" required>
+        </div>
+        <button type="submit" class="btn-primary" id="signup-btn">
+          <span id="signup-btn-text">Create account</span>
+        </button>
+        <div class="auth-toggle">Already have one? <a onclick="switchForm('login')" tabindex="0">Log in</a></div>
+      </form>
+
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+
+const SUPABASE_URL     = 'https://rfaqtytkskpvyvrjarvo.supabase.co';
+const SUPABASE_ANON_KEY= 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmYXF0eXRrc2twdnl2cmphcnZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczNjM0MTQsImV4cCI6MjA1MjkzOTQxNH0.Q862iYHfcN4Hg3ImznqiNg_sVPid-Gv4K8wJLx_WE2s';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ── CHECK EXISTING SESSION ─────────────────────────────────────────────── */
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) redirect();
+})();
+
+/* ── CURSOR ─────────────────────────────────────────────────────────────── */
+const dot  = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function lerp() {
+  rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+  dot.style.transform  = `translate3d(${mx}px,${my}px,0) translate(-50%,-50%)`;
+  ring.style.transform = `translate3d(${rx}px,${ry}px,0) translate(-50%,-50%)`;
+  requestAnimationFrame(lerp);
+})();
+document.querySelectorAll('a, button, input').forEach(el => {
+  el.addEventListener('mouseenter', () => ring.classList.add('hover'));
+  el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+});
+
+/* ── FORM SWITCH ────────────────────────────────────────────────────────── */
+function switchForm(mode) {
+  clearErr();
+  document.getElementById('login-form').classList.toggle('active',  mode === 'login');
+  document.getElementById('signup-form').classList.toggle('active', mode === 'signup');
+  document.getElementById('auth-title-text').textContent = mode === 'login' ? 'Welcome back.' : 'Join TROLL.';
+  document.getElementById('auth-sub-text').textContent   = mode === 'login' ? 'Sign in to your account' : 'Create your angler profile';
+}
+
+/* ── ERROR ──────────────────────────────────────────────────────────────── */
+function showErr(msg) {
+  const el = document.getElementById('auth-err');
+  el.textContent = msg; el.classList.add('on');
+}
+function clearErr() {
+  const el = document.getElementById('auth-err');
+  el.textContent = ''; el.classList.remove('on');
+}
+
+/* ── REDIRECT ───────────────────────────────────────────────────────────── */
+function redirect() {
+  document.getElementById('splash-out').classList.add('on');
+  setTimeout(() => { window.location.href = 'dashboard.html'; }, 400);
+}
+
+/* ── LOGIN ──────────────────────────────────────────────────────────────── */
+async function handleLogin(e) {
+  e.preventDefault(); clearErr();
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-pw').value;
+  const btn   = document.getElementById('login-btn');
+  const lbl   = document.getElementById('login-btn-text');
+
+  lbl.textContent = 'Signing in…'; btn.disabled = true;
+
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+
+  if (error) {
+    showErr(error.message);
+    lbl.textContent = 'Log in'; btn.disabled = false;
+  } else {
+    redirect();
+  }
+}
+
+/* ── SIGNUP ─────────────────────────────────────────────────────────────── */
+async function handleSignup(e) {
+  e.preventDefault(); clearErr();
+  const username = document.getElementById('signup-name').value.trim();
+  const email    = document.getElementById('signup-email').value.trim();
+  const pw       = document.getElementById('signup-pw').value;
+  const btn      = document.getElementById('signup-btn');
+  const lbl      = document.getElementById('signup-btn-text');
+
+  if (!username) { showErr('Username is required'); return; }
+
+  lbl.textContent = 'Creating account…'; btn.disabled = true;
+
+  const { data, error } = await sb.auth.signUp({
+    email, password: pw,
+    options: { data: { username } }
+  });
+
+  if (error) {
+    showErr(error.message);
+    lbl.textContent = 'Create account'; btn.disabled = false;
+    return;
+  }
+
+  /* Profile row (trigger also handles this — this is a safety net) */
+  if (data.user) {
+    await sb.from('profiles').upsert({
+      id: data.user.id, username, email
+    }, { onConflict: 'id' });
+  }
+
+  lbl.textContent = 'Create account'; btn.disabled = false;
+  showErr(''); // clear error slot
+  /* Show confirmation notice instead of error */
+  const err = document.getElementById('auth-err');
+  err.style.color = 'var(--calm)';
+  err.textContent = 'Check your email to confirm, then log in.';
+  err.classList.add('on');
+  switchForm('login');
+  setTimeout(() => { err.style.color = ''; clearErr(); }, 8000);
+}
+</script>
+</body>
+</html>
